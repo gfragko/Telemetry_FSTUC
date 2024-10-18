@@ -22,5 +22,5 @@ void loop() {
   Serial.println(tempValue);
 
   // Delay to match Raspberry Pi logging interval
-  delay(500);  // Adjust delay as needed
+  delay(50);  // Adjust delay as needed
 }
