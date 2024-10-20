@@ -14,12 +14,16 @@ with open(log_file, 'a') as file:
     try:
         while True:
             # Read data from Arduino
+            # Example of an incoming packet through the serial monitor
+            # "S1:1023,S2:x,S3:x|S1:937,S2:x,S3:x|S1:553,S2:x,S3:x|S1:337,S2:x,S3:x|S1:563,S2:x,S3:x|S1:980,S2:x,S3:x|S1:1023,S2:x,S3:x|S1:762,S2:x,S3:x|S1:370,S2:x,S3:x|S1:368,S2:x,S3:x|"
             if ser.in_waiting > 0:
                 data = ser.readline().decode('utf-8').strip()
                 
                 #Split data by "|"
+                #["S1:1023,S2:x,S3:x","S1:1023,S2:x,S3:x","S1:1023,S2:x,S3:x",.......]
                 sensor_values = data.split('|')
                 # Split the incoming data by commas 
+                #["S1:1023","S2:x","S3:x","S1:1023","S2:x","S3:x","S1:1023","S2:x","S3:x",.......]
                 for values in sensor_values:
                     values = values.split(',')
                     
@@ -35,7 +39,7 @@ with open(log_file, 'a') as file:
 
                         print(f"Logged: {timestamp},{values[0]},{values[1]},{values[2]}")
 
-            time.sleep(0.5)  # Match the delay in Arduino loop
+            time.sleep(0.5)
     except KeyboardInterrupt:
         print("Logging stopped.")
 
