@@ -16,21 +16,24 @@ with open(log_file, 'a') as file:
             # Read data from Arduino
             if ser.in_waiting > 0:
                 data = ser.readline().decode('utf-8').strip()
+                
+                #Split data by "|"
+                sensor_values = data.split('|')
+                # Split the incoming data by commas 
+                for values in sensor_values:
+                    values = values.split(',')
+                    
+                    if len(values) == 3:#assuming 3 sensors, we need to change according to the application 
+                        # Get current timestamp
+                        timestamp = time.strftime("%Y-%m-%d %H:%M:%S")#we can avoid this by adding a clock to each arduino
 
-                # Split the incoming data by commas (assuming 3 sensors)
-                sensor_values = data.split(',')
+                        # Write data to file
+                        file.write(f"{timestamp},{values[0]},{values[1]},{values[2]}\n")
 
-                if len(sensor_values) == 3:
-                    # Get current timestamp
-                    timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+                        # Flush file to ensure data is saved
+                        file.flush()
 
-                    # Write data to file
-                    file.write(f"{timestamp},{sensor_values[0]},{sensor_values[1]},{sensor_values[2]}\n")
-
-                    # Flush file to ensure data is saved
-                    file.flush()
-
-                    print(f"Logged: {timestamp},{sensor_values[0]},{sensor_values[1]},{sensor_values[2]}")
+                        print(f"Logged: {timestamp},{values[0]},{values[1]},{values[2]}")
 
             time.sleep(0.5)  # Match the delay in Arduino loop
     except KeyboardInterrupt:

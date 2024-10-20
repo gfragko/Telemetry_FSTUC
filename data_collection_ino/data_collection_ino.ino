@@ -28,18 +28,18 @@ void setup() {
 void loop() {
   // Read sensor data
   int sensor1Data = analogRead(sensor1Pin);
-  int sensor2Data = analogRead(sensor2Pin);
-  int sensor3Data = analogRead(sensor3Pin);
+  // int sensor2Data = analogRead(sensor2Pin);
+  // int sensor3Data = analogRead(sensor3Pin);
 
   // Add the current sensor readings to the data packet
   packetIndex += snprintf(dataPacket + packetIndex, sizeof(dataPacket) - packetIndex, 
-                          "S1:%d,S2:%d,S3:%d|", sensor1Data, sensor2Data, sensor3Data);
+                          "S1:%d,S2:x,S3:x|", sensor1Data);
 
   // Check if one second has passed
   unsigned long currentTime = millis();
   if (currentTime - lastSendTime >= interval) {
     // Add a newline at the end of the packet to mark its completion
-    snprintf(dataPacket + packetIndex, sizeof(dataPacket) - packetIndex, "\n");
+    snprintf(dataPacket + packetIndex, sizeof(dataPacket) - packetIndex, "\n\n");
 
     // Send the entire packet over Serial to the Raspberry Pi
     Serial.write(dataPacket);
