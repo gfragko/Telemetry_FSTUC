@@ -1,15 +1,15 @@
 import serial
 import time
 
-# Initialize serial communication (adjust 'ttyUSB0' as needed)
-ser = serial.Serial('/dev/ttyUSB0', 9600, timeout=1)
+# Initialize serial communication (adjust 'COM12' as needed)
+ser = serial.Serial('COM12', 9600)  # For Windows
 
 # File to store data
-log_file = '/home/pi/multi_sensor_data.csv'
+log_file = 'multi_sensor_data.csv'
 
 # Open the file in append mode
 with open(log_file, 'a') as file:
-    file.write("Timestamp,Potentiometer 1,Potentiometer 2,Temperature Sensor\n")  # Add header
+    file.write("Timestamp,Sensor 1,Sensor 2,Sensor 3\n")  # Add header
 
     try:
         while True:
