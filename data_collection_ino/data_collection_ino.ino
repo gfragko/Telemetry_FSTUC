@@ -33,7 +33,7 @@ void loop() {
 
   // Add the current sensor readings to the data packet
   packetIndex += snprintf(dataPacket + packetIndex, sizeof(dataPacket) - packetIndex, 
-                          "S1:%d,S2:%d,S3:%d|", sensor1Data, sensor2Data, sensor3Data);
+                          "%d,%d,%d|", sensor1Data, sensor2Data, sensor3Data);
 
   // Check if one second has passed
   unsigned long currentTime = millis();
