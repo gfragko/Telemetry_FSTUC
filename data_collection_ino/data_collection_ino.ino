@@ -26,17 +26,21 @@ void setup() {
 }
 
 void loop() {
+  //get current time (we will change this part with RTC module)
+  unsigned long currentTime = millis();// to gamidi to snprintf de pairnei floats opote to krataw long int 
+  // float currentSecond = currentTime / 1000.0;
   // Read sensor data
   int sensor1Data = analogRead(sensor1Pin);
+//  Serial.println(sensor1Data);
   int sensor2Data = analogRead(sensor2Pin);
   int sensor3Data = analogRead(sensor3Pin);
 
   // Add the current sensor readings to the data packet
   packetIndex += snprintf(dataPacket + packetIndex, sizeof(dataPacket) - packetIndex, 
-                          "%d,%d,%d|", sensor1Data, sensor2Data, sensor3Data);
+                          "%lu,%d,%d,%d|", currentTime, sensor1Data, sensor2Data, sensor3Data);
 
   // Check if one second has passed
-  unsigned long currentTime = millis();
+  
   if (currentTime - lastSendTime >= interval) {
     // Add a newline at the end of the packet to mark its completion
     snprintf(dataPacket + packetIndex, sizeof(dataPacket) - packetIndex, "\n\n");
