@@ -28,7 +28,7 @@ print(sensor_1)
 plt.figure(figsize=(10, 6))
 
 # Σχεδιάζουμε τις τιμές των αισθητήρων σε σχέση με τον χρόνο
-plt.plot(time, sensor_1, label='Sensor 1')
+plt.stem(time, sensor_1, label='Sensor 1')
 # plt.plot(time, sensor_2, label='Sensor 2')
 # plt.plot(time, sensor_3, label='Sensor 3')
 
