@@ -41,7 +41,8 @@ void get_timestamp(unsigned long current_millis, int timestamp[]){
     unsigned int seconds = ((real_millis / 1000) + start_second) % 60; 
     int temp = (((real_millis / 1000) + start_second) / 60);
     int minutes = (temp + start_minute) % 60; 
-    int hours = ((minutes/60) + start_hour) % 24;
+    int temp_2 = minutes/60 ;
+    int hours = (temp_2 + start_hour) % 24;
 
     timestamp[0] = (int) hours;
     timestamp[1] = (int) minutes;
