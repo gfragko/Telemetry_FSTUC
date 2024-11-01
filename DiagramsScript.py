@@ -1,45 +1,34 @@
-import csv
+import pandas as pd
 import matplotlib.pyplot as plt
-from datetime import datetime
-import matplotlib.dates as mdates
 
-# Λίστες για να αποθηκεύσουμε τα δεδομένα
-time = []
-sensor_1 = []
-sensor_2 = []
-sensor_3 = []
+# Read the CSV data into a DataFrame
+from io import StringIO
+df = pd.read_csv("test_rtc.csv")
 
-# Ανάγνωση του CSV αρχείου
-with open("multi_sensor_data.csv", 'r') as csvfile: #Βάλε το σωστό file path
-    csvreader = csv.reader(csvfile)
-    next(csvreader)  # Παράλειψη της κεφαλίδας    drhddhdhbdf
-    for row in csvreader:
-        time.append(float(row[0])/1000)      # Χρόνος (Time)
-        # print("==========================================================")
-        sensor_1.append(int(row[1]))    # Τιμές του αισθητήρα 1 (S1)
-        sensor_2.append(int(row[2]))    # Τιμές του αισθητήρα 2 (S2)
-        sensor_3.append(int(row[3]))    # Τιμές του αισθητήρα 3 (S3)
-        
-print(time)
-print(sensor_1)
+# Convert the 'Timestamp' column to datetime
+df['Timestamp'] = pd.to_datetime(df['Timestamp'])
+
+# Set the 'Timestamp' as the index for plotting
+df.set_index('Timestamp', inplace=True)
+
+# Plot the sensor data
+# plt.figure(figsize=(12, 6))
+plt.plot(df.index, df['Sensor 1'], label='Sensor 1', marker='o')
+plt.plot(df.index, df['Sensor 2'], label='Sensor 2', marker='x')
+plt.plot(df.index, df['Sensor 3'], label='Sensor 3', marker='s')
 
 
-# Δημιουργία του γραφήματος
-plt.figure(figsize=(10, 6))
-
-# Σχεδιάζουμε τις τιμές των αισθητήρων σε σχέση με τον χρόνο
-plt.stem(time, sensor_1, label='Sensor 1')
-# plt.plot(time, sensor_2, label='Sensor 2')
-# plt.plot(time, sensor_3, label='Sensor 3')
+print(df['Sensor 1'])
 
 
-# Προσθήκη ετικετών και τίτλων
-plt.xlabel('Time (seconds)')
+# Adding titles and labels
+plt.title('Sensor Values Over Time')
+plt.xlabel('Timestamp')
 plt.ylabel('Sensor Values')
-plt.title('Sensor Data over Time')
+plt.xticks(rotation=45)
+plt.grid()
 plt.legend()
-
-# Εμφάνιση του γραφήματος
-plt.grid(True)
 plt.tight_layout()
+
+# Show the plot
 plt.show()
