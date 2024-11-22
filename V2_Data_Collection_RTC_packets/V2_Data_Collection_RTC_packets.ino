@@ -1,40 +1,32 @@
-#include <Wire.h>
-#include <RTClib.h>
-#include <Ds1302.h>
+#include <stdio.h>
+#include <ThreeWire.h>  
+#include <RtcDS1302.h>
 
+ThreeWire myWire(4,5,2); // IO, SCLK, CE
+RtcDS1302<ThreeWire> Rtc(myWire);
+// CONNECTIONS:
+// DS1302 CLK/SCLK --> 5
+// DS1302 DAT/IO --> 4
+// DS1302 RST/CE --> 2
+// DS1302 VCC --> 3.3v - 5v
+// DS1302 GND --> GND
 
-// Define RTC pins
-#define RSTPIN 7
-#define CLK_PIN 6
-#define DATA_PIN 5
-
-// Create an RTC object
-Ds1302 rtc(RSTPIN, CLK_PIN, DATA_PIN);
-// Create an RTC object
-// RTC_DS3231 rtc;  // Change to RTC_DS1307 if using the DS1307
 
 // Define your sensor pins
 const int sensor1Pin = A0;
 const int sensor2Pin = A1;
 const int sensor3Pin = A2;
-int setup_second;
 int start_second;
 int start_minute;
 int start_hour;
-int start_millis = -1;
-char dataPacket[200];  // Large enough to hold all the readings over 1 second
+char dataPacket[500];  // Large enough to hold all the readings over 1 second
 int packetIndex = 0;   // Index to keep track of where to write in the packet
 int packet_counter = 0;
-// unsigned long lastSendTime = 0;
-// const unsigned long interval = 1000;  // 1 second
 
 
 
 void get_timestamp(unsigned long current_millis, int timestamp[]){
-
-
-    unsigned long real_millis = current_millis - start_millis;
-
+    unsigned long real_millis = current_millis;
 
     unsigned long milliseconds = real_millis % 1000;
     unsigned int seconds = ((real_millis / 1000) + start_second) % 60; 
@@ -47,12 +39,9 @@ void get_timestamp(unsigned long current_millis, int timestamp[]){
     timestamp[1] = (int) minutes;
     timestamp[2] = (int) seconds;
     timestamp[3] = (int) milliseconds;
-
-
 }
 
 void send_measurements(){
-    // DateTime now = rtc.now();
     packet_counter++;
 
     // Read sensor values
@@ -61,8 +50,6 @@ void send_measurements(){
     int sensor3Value = analogRead(sensor3Pin);
     unsigned long current_millis = millis();
 
-    // Get the current time from the RTC
-    // DateTime now = rtc.now();
 
     int timestamp[4];
 
@@ -73,7 +60,7 @@ void send_measurements(){
     sprintf(msString, "%03d", timestamp[3]); // Format ms with leading zeros if needed
 
 
-
+    
     packetIndex += snprintf(dataPacket + packetIndex, sizeof(dataPacket) - packetIndex, 
                           "%d:%d:%d.%03d,%d,%d,%d|", timestamp[0], timestamp[1], timestamp[2], timestamp[3], sensor1Value, sensor2Value, sensor3Value);
 
@@ -91,50 +78,32 @@ void send_measurements(){
 
         // Update the counter
         packet_counter = 0;
+        return;
     }
 
     // 10 measurements per packet
     delay(100);
+    return;
 }
 
 
 
 void setup() {
     Serial.begin(9600);
-  
-    // Initialize the RTC
-    if (!rtc.begin()) {
-        Serial.println("Couldn't find RTC");
-        while (1);
-    }
     
-    // Check if the RTC is running
-    if (rtc.lostPower()) {
-        Serial.println("RTC lost power, setting the time!");
-        // Uncomment the line below to set the time when needed
-        // rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
-    }
-    // DateTime now = rtc.now();
-    // start_second = now.second();
-    // start_minute = now.minute();
-    // start_hour = now.hour();
 
-    // Get the current time
-    DS1302::DateTime now = rtc.getDateTime();
-    start_second = now.second;
-    start_minute = now.minute;
-    start_hour = now.hour;
-
-    // Print the time
-    Serial.print("Time: ");
+    RtcDateTime now = Rtc.GetDateTime();
+    
+    
+    start_second = now.Second();
+    start_minute = now.Minute();
+    start_hour = now.Hour();
+    Serial.print("Set up time:");
     Serial.print(start_hour);
     Serial.print(":");
     Serial.print(start_minute);
     Serial.print(":");
     Serial.println(start_second);
-
-
-
 
 
     // Initialize the packet with an empty string
@@ -144,13 +113,5 @@ void setup() {
 
 
 void loop() {
-    
-
-    send_measurements();
-        
- 
-
-
-
-
+  send_measurements();
 }

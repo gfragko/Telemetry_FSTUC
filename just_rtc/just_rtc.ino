@@ -1,38 +1,95 @@
-#include <Ds1302.h>
+/* 
+Modified on Nov 25, 2020
+Modified by MehranMaleki from Arduino Examples
+Home
+*/
 
 
-// Define RTC pins
-#define RSTPIN 7
-#define CLK_PIN 6
-#define DATA_PIN 5
+// CONNECTIONS:
+// DS1302 CLK/SCLK --> 5
+// DS1302 DAT/IO --> 4
+// DS1302 RST/CE --> 2
+// DS1302 VCC --> 3.3v - 5v
+// DS1302 GND --> GND
 
-// Create an RTC object
-Ds1302 rtc(RSTPIN, CLK_PIN, DATA_PIN);
+#include <ThreeWire.h>
+#include <RtcDS1302.h>
+
+ThreeWire myWire(4, 5, 2);  // IO, SCLK, CE
+RtcDS1302<ThreeWire> Rtc(myWire);
 
 void setup() {
-    Serial.begin(9600);
+  Serial.begin(9600);
 
-    // Initialize RTC
-    rtc.begin();
+  Serial.print("compiled: ");
+  Serial.print(__DATE__);
+  Serial.println(__TIME__);
 
-    // Uncomment to set the time (only needed once)
-    // rtc.setDateTime(__DATE, __TIME);
+  Rtc.Begin();
 
-    Serial.println("RTC Initialized");
+  RtcDateTime compiled = RtcDateTime(__DATE__, __TIME__);
+  printDateTime(compiled);
+  Serial.println();
+
+  if (!Rtc.IsDateTimeValid()) {
+    // Common Causes:
+    //    1) first time you ran and the device wasn't running yet
+    //    2) the battery on the device is low or even missing
+
+    Serial.println("RTC lost confidence in the DateTime!");
+    Rtc.SetDateTime(compiled);
+  }
+
+  if (Rtc.GetIsWriteProtected()) {
+    Serial.println("RTC was write protected, enabling writing now");
+    Rtc.SetIsWriteProtected(false);
+  }
+
+  if (!Rtc.GetIsRunning()) {
+    Serial.println("RTC was not actively running, starting now");
+    Rtc.SetIsRunning(true);
+  }
+
+  RtcDateTime now = Rtc.GetDateTime();
+  if (now < compiled) {
+    Serial.println("RTC is older than compile time!  (Updating DateTime)");
+    Rtc.SetDateTime(compiled);
+  } else if (now > compiled) {
+    Serial.println("RTC is newer than compile time. (this is expected)");
+  } else if (now == compiled) {
+    Serial.println("RTC is the same as compile time! (not expected but all is fine)");
+  }
 }
 
 void loop() {
-    // Get the current time
-    DS1302::DateTime now = rtc.getDateTime();
+  RtcDateTime now = Rtc.GetDateTime();
 
-    // Print the time
-    Serial.print("Time: ");
-    Serial.print(now.hour);
-    Serial.print(":");
-    Serial.print(now.minute);
-    Serial.print(":");
-    Serial.println(now.second);
+  printDateTime(now);
+  Serial.println();
 
-    // Delay for 1 second
-    delay(1000);
+  if (!now.IsValid()) {
+    // Common Causes:
+    //    1) the battery on the device is low or even missing and the power line was disconnected
+    Serial.println("RTC lost confidence in the DateTime!");
+  }
+
+  // delay(5000); // five seconds
+}
+
+#define countof(a) (sizeof(a) / sizeof(a[0]))
+
+void printDateTime(const RtcDateTime& dt) {
+  char datestring[20];
+
+  snprintf_P(datestring,
+             countof(datestring),
+             PSTR("%02u/%02u/%04u %02u:%02u:%02u"),
+             dt.Month(),
+             dt.Day(),
+             dt.Year(),
+             dt.Hour(),
+             dt.Minute(),
+             dt.Second());
+  Serial.println(datestring);
+  Serial.print(millis());
 }
