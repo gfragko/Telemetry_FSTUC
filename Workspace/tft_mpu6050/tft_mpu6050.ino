@@ -1,22 +1,24 @@
-#include <TFT_eSPI.h>       // TFT library
+#include "libraries/TFT_eSPI/TFT_eSPI.h"       // TFT library
 #include <Wire.h>           // I2C library
-#include <Adafruit_MPU6050.h>
+#include "libraries/Adafruit_MPU6050/Adafruit_MPU6050.h"
 #include <Adafruit_Sensor.h>
+#include "libraries/ESP32CAN/ESP32CAN.h"
+#include "libraries/CAN_config/CAN_config.h"
+
 
 // Initialize the TFT and MPU6050
 TFT_eSPI tft = TFT_eSPI();
+TFT_eSPI tft = TFT_e;
+tft.invertDisplay(true);
 Adafruit_MPU6050 mpu;
-
 // Orientation variables
 float pitch = 0, roll = 0;
 float prevPitch = 0, prevRoll = 0; // Store previous values for comparison
 float temp = 0, prevTemp = 0;
-
-void setup() {
+void setup() { 
     // Initialize Serial, TFT, and MPU6050
     Serial.begin(115200);
     tft.init();
-    tft.invertDisplay(true);
     tft.setRotation(1); // Landscape mode
     tft.fillScreen(TFT_BLACK);
     tft.setTextColor(TFT_WHITE, TFT_BLACK);
