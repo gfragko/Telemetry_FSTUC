@@ -1,78 +1,65 @@
-#include <stdio.h>
-#include <ThreeWire.h> 
-#include <mcp2515.h>
+#include <SPI.h>
+#include <mcp_can.h>
 
-#define ID_SENSOR_DATA 0x101 // CAN message ID for sensor data
-#define CAN_CS_PIN 10 // CAN controller chip select pin
+#define CAN0_INT 21                             // Set INT to pin 2
+MCP_CAN CAN0(5);                               // Set CS to pin 10
 
-// MCP2515 CAN configuration
-struct can_frame canMsg;      // CAN frame structure
-MCP2515 mcp2515(CAN_CS_PIN);  // MCP2515 instance on CS pin 10
+#define ID_SENSOR_DATA 0x101  // CAN message ID for sensor data
 
 // Sensor pins
-const int sensor1Pin = A0;
-const int sensor2Pin = A1;
-const int sensor3Pin = A2;
+const int sensor1Pin = 2;    // Use a valid ADC pin on ESP32
 
-// Function to read sensor data and send it via CAN
+void setup()
+{
+  Serial.begin(115200);  // CAN is running at 500,000BPS; 115,200BPS is SLOW, not FAST, thus 9600 is crippling.
+  
+  // Initialize MCP2515 running at 16MHz with a baudrate of 500kb/s and the masks and filters disabled.
+  if(CAN0.begin(MCP_ANY, CAN_500KBPS, MCP_8MHZ) == CAN_OK)
+    Serial.println("MCP2515 Initialized Successfully!");
+  else
+    Serial.println("Error Initializing MCP2515...");
+  
+  // Since we do not set NORMAL mode, we are in loopback mode by default.
+  CAN0.setMode(MCP_NORMAL);
+
+  pinMode(CAN0_INT, INPUT);                           // Configuring pin for /INT input
+  
+  Serial.println("MCP2515 Library Loopback Example...");
+}
+
 void readAndSendSensorData() {
     // Read analog sensor values
     int sensor1Value = analogRead(sensor1Pin);
-    int sensor2Value = analogRead(sensor2Pin);
-    int sensor3Value = analogRead(sensor3Pin);
+    int sensor2Value = 20; // Placeholder for additional sensors
+    int sensor3Value = 20; // Placeholder for additional sensors
 
     // Map sensor values to 8-bit range (0-255)
-    unsigned char mappedValues[8] = {0};
-    mappedValues[0] = map(sensor1Value, 0, 1023, 0, 255);
-    mappedValues[1] = map(sensor2Value, 0, 1023, 0, 255);
-    mappedValues[2] = map(sensor3Value, 0, 1023, 0, 255);
+    unsigned char data[8] = {0};
+    data[0] = (char)map(sensor1Value, 0, 1023, 0, 255);
+    data[1] = (char)map(sensor2Value, 0, 1023, 0, 255);
+    data[2] = (char)map(sensor3Value, 0, 1023, 0, 255);
+
+    // Print the CAN frame details
+    Serial.print("CAN Frame - ID: 0x");
+    Serial.print(ID_SENSOR_DATA, HEX);
+    Serial.print(", DLC: 3, Data: ");
+    for (int i = 0; i < 3; i++) { // Adjusted to only print valid data
+        Serial.print("0x");
+        Serial.print(data[i], HEX);
+        Serial.print(" ");
+    }
+    Serial.println();
 
     // Send CAN message
-    sendCanMessage(0x101, mappedValues);
-}
-
-// Function to send a CAN message
-void sendCanMessage(uint16_t id, unsigned char* data) {
-    canMsg.can_id = id;       // Set the message ID
-    canMsg.can_dlc = 8;       // Set data length (8 bytes)
-
-    // Copy the data into the CAN frame
-    for (int i = 0; i < 8; i++) {
-        canMsg.data[i] = data[i];
-    }
-
-    // Transmit the CAN frame
-    if (mcp2515.sendMessage(&canMsg) == MCP2515::ERROR_OK) {
-        Serial.print("Data sent via CAN bus with ID: 0x");
-        Serial.println(id, HEX);
+    byte sendStatus = CAN0.sendMsgBuf(ID_SENSOR_DATA, 0, 3, data);
+    if (sendStatus == CAN_OK) {
+        Serial.println("Data sent successfully.");
     } else {
-        Serial.print("Error sending CAN data with ID: 0x");
-        Serial.println(id, HEX);
+        Serial.println("Error sending data.");
     }
-}
-
-// Map function to scale values
-int map(int x, int in_min, int in_max, int out_min, int out_max) {
-    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
-}
-
-void setup() {
-    Serial.begin(115200);
-    Serial.println("Basic Demo - ESP32-Arduino-CAN with MCP2515");
-    
-    // Initialize SPI and MCP2515
-    SPI.begin();
-    mcp2515.reset();
-
-    // Set MCP2515 to Normal mode and configure speed
-    mcp2515.setBitrate(CAN_125KBPS);
-    mcp2515.setNormalMode();
-
-    Serial.println("MCP2515 initialized successfully.");
 }
 
 void loop() {
     readAndSendSensorData(); // Read sensors and send data
-    delay(100);              // Add a small delay to avoid overwhelming the CAN bus
+    // delay(1);              // Increase delay to reduce bus flooding
 }
-
