@@ -1,27 +1,25 @@
 #include "libraries/ESP32-Arduino-CAN-master/src/ESP32CAN.h"
 #include "libraries/mcp_can/mcp_can.h"
 
+define CAN0_INT 2                             // Set INT to pin 2   for arduino or 21 for esp32
+MCP_CAN CAN0(10);                               // Set CS to pin 10 for arduino or 5 for esp32
 
-#define CAN_CS_PIN 5        // Chip Select pin for MCP2515
-#define TARGET_CAN_ID 0x101   // Target CAN ID to listen for
-
-MCP_CAN CAN(CAN_CS_PIN);      // Initialize MCP_CAN object
+#define ID_SENSOR_DATA 0x101  // CAN message ID for sensor data
 
 void setup() {
-  Serial.begin(115200);
-  while (!Serial);
-  Serial.println("CAN Receiver - Listening to Specific ID");
 
-    // Initialize MCP2515
-    if (CAN.begin(MCP_ANY, CAN_500KBPS, MCP_8MHZ) == CAN_OK) {
+    Serial.begin(115200);  // CAN is running at 500,000BPS; 115,200BPS is SLOW, not FAST, thus 9600 is crippling.
+    
+    // Initialize MCP2515 running at 16MHz with a baudrate of 500kb/s and the masks and filters disabled.
+    if(CAN0.begin(MCP_ANY, CAN_500KBPS, MCP_8MHZ) == CAN_OK)
         Serial.println("MCP2515 Initialized Successfully!");
-    } else {
+    else
         Serial.println("Error Initializing MCP2515...");
-        while (1);
-    }
+    
+    // Since we do not set NORMAL mode, we are in loopback mode by default.
+    CAN0.setMode(MCP_NORMAL);
 
-    // Set MCP2515 to Normal Mode
-    CAN.setMode(MCP_NORMAL);
+    pinMode(CAN0_INT, INPUT);                           // Configuring pin for /INT input
 
     // Configure mask and filter to listen only to TARGET_CAN_ID
     CAN.init_Mask(0, 1, 0x7FF); // Mask 0: Full 11-bit ID match
