@@ -1,8 +1,8 @@
 #include <SPI.h>
 #include <mcp_can.h>
 
-#define CAN0_INT 21                             // Set INT to pin 2
-MCP_CAN CAN0(5);                               // Set CS to pin 10
+#define CAN0_INT 2                             // Set INT to pin 2
+MCP_CAN CAN0(10);                               // Set CS to pin 10
 
 #define ID_SENSOR_DATA 0x101  // CAN message ID for sensor data
 
