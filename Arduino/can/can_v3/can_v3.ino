@@ -24,7 +24,6 @@ void setup()
 
   pinMode(CAN0_INT, INPUT);                           // Configuring pin for /INT input
   
-  Serial.println("MCP2515 Library Loopback Example...");
 }
 
 void readAndSendSensorData() {
