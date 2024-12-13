@@ -52,7 +52,8 @@ void readAndSendSensorData() {
     // Send CAN message
     byte sendStatus = CAN0.sendMsgBuf(ID_SENSOR_DATA, 0, 3, data);
     if (sendStatus == CAN_OK) {
-        Serial.println("Data sent successfully.");
+        Serial.print(sendStatus);
+        Serial.println(" -> Data sent successfully.");
     } else {
         Serial.println("Error sending data.");
     }

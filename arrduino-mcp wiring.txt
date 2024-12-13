@@ -1,0 +1,6 @@
+int -> 2
+sck -> 13
+si -> 11
+miso -> 12
+cs -> 10
+vcc -> 5v
