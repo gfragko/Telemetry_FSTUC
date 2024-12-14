@@ -5,11 +5,11 @@ The arduino gets as input the measurements from the sensors, formats them and pa
 
 ### <ins>TODO:</ins>
 + ~~Fix arduino code for correct usage of RTC~~
-+ Transform arduino output for usage of CAN bus
++ ~~Transform arduino output for usage of CAN bus~~
 + Implement sending data to remote pc
 + Create GUI for live data
 + Raspberry Pi sever for live data (???)
 
 ### <ins>Notes:</ins>
-+ **V2_Data_Collection_RTC_packets:** It takes 170ms to send the packet through serial, hence the extra 70ms delay when sending the packet. This does not affect the timestamp accuracy.
-+ **File Structure:** New file structure for a cleaner repo. 
++ Use Find_SPI.ino script to figure out the pins to be used on the esp32 board
++ Use gpio 2 (on eps 32) for interrupt on mcp2515
