@@ -6,7 +6,11 @@ The arduino gets as input the measurements from the sensors, formats them and pa
 ### <ins>TODO:</ins>
 + ~~Fix arduino code for correct usage of RTC~~
 + ~~Transform arduino output for usage of CAN bus~~
-+ Implement sending data to remote pc
++ ~~Send and receive can frames with mcp2515~~
++ Save can messages on ECU
++ Set up slaves to master to raspberry pi architecture 
++ Save data locally on raspberry pi via usb
++ Send data through RF
 + Create GUI for live data
 + Raspberry Pi sever for live data (???)
 
