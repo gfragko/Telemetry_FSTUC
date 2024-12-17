@@ -23,8 +23,8 @@ MPU6050 mpu;
 // Sensor pins
 const int potentiometerPin = 3;    // Use a valid ADC pin on ESP32 for petensiometer
 
-const int sdaPin = 5;    // Use a valid sda pin on ESP32 for MPU6050
-const int sclPin = 4;    // Use a valid scl pin on ESP32 for MPU6050
+const int SDA_PIN = 5;    // Use a valid sda pin on ESP32 for MPU6050
+const int SCL_PIN = 4;    // Use a valid scl pin on ESP32 for MPU6050
 
 // const int hallEffectPin = 0; // Use a valid pin on ESP32 for Hall Effect sensor
 
@@ -55,7 +55,7 @@ void setup()
   } else {
     Serial.println("MPU6050 initialized successfully.");
   }
-  
+
 }
 
 void sendCanData(int id,int16_t value1,int16_t x,int16_t y,int16_t z){
@@ -77,8 +77,8 @@ void sendCanData(int id,int16_t value1,int16_t x,int16_t y,int16_t z){
     data[7] = highByte(z); // High byte of z
 
     // Send the data array over CAN (example with 8 bytes)
-    if ((id == 101) && CAN.sendMsgBuf(ID_SENSOR_DATA_101, 0, 8, data) == CAN_OK) {
-        Serial.println("Message sent successfully.");
+    if ((id == 101) && (CAN0.sendMsgBuf(ID_SENSOR_DATA_101, 0, 8, data) == CAN_OK)) {
+        Serial.println("Message sent successfully_101.");
         
         // Print the CAN frame details
         Serial.print("CAN Frame - ID: 0x");
@@ -90,8 +90,8 @@ void sendCanData(int id,int16_t value1,int16_t x,int16_t y,int16_t z){
             Serial.print(" ");
         }
         Serial.println();
-    } else if ((id == 201) && CAN.sendMsgBuf(ID_SENSOR_DATA_201, 0, 8, data) == CAN_OK){
-        Serial.println("Message sent successfully.");
+    } else if ((id == 201) && (CAN0.sendMsgBuf(ID_SENSOR_DATA_201, 0, 8, data) == CAN_OK)){
+        Serial.println("Message sent successfully_201.");
         
         // Print the CAN frame details
         Serial.print("CAN Frame - ID: 0x");
@@ -111,7 +111,7 @@ void sendCanData(int id,int16_t value1,int16_t x,int16_t y,int16_t z){
 
 void readAndSendSensorData() {
     // Read analog sensor values
-    int16_t petentiometerValue = analogRead(potentiometerPin);
+    int16_t potentiometerValue = analogRead(potentiometerPin);
 
     int16_t ax, ay, az, gx, gy, gz;
 
@@ -126,5 +126,5 @@ void readAndSendSensorData() {
 
 void loop() {
     readAndSendSensorData(); // Read sensors and send data
-    // delay(1);              // Increase delay to reduce bus flooding
+    delay(100);              // Increase delay to reduce bus flooding
 }
