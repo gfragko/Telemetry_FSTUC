@@ -11,6 +11,28 @@ MPU6050 mpu;
 #define ID_SENSOR_DATA_101 0x101  // CAN message ID for front left wheel and sensors potentiometer and accelerator
 #define ID_SENSOR_DATA_201 0x201  // CAN message ID for front left wheel and sensors gyroscope and hall-effect
 
+// | CAN ID  | Offset | Name                       | Unit | Scale | Type  | Rate  | Firmware        | Comment |
+// |---------|--------|----------------------------|------|-------|-------|-------|----------------|---------|
+// | 0x520   | 0      | RPM                        | rpm  | 1     | int16 | 50Hz  | 1.67 and newer |         |
+// | 0x520   | 2      | Throttle position/pedal    | %    | 0.1   | int16 | 50Hz  | 1.67 and newer |         |
+// | 0x520   | 4      | MAP                        | kPa  | 0.1   | int16 | 50Hz  | 1.67 and newer |         |
+// | 0x520   | 6      | Lambda                     |      | 0.001 | int16 | 50Hz  | 1.67 and newer | Average lambda |
+// | 0x521   | 0      | Lambda A                   |      | 0.001 | int16 | 50Hz  | 1.67 and newer | Lambda cylinder bank A |
+// | 0x521   | 4      | Ignition angle             | BTDC | 0.1   | int16 | 50Hz  | 1.67 and newer |         |
+// | 0x521   | 6      | Ignition cut               | %    | 1     | int16 | 50Hz  | 1.67 and newer | Percent of ignition event being cut (for rev-limit etc) |
+// | 0x522   | 4      | Fuel cut                   | %    | 1     | int16 | 50Hz  | 1.67 and newer | Percent of fuel event being cut (for rev-limit etc) |
+// | 0x522   | 6      | Vehicle Speed              | km/h | 0.1   | int16 | 50Hz  | 1.67 and newer | Speed signal for display purpose |
+// | 0x524   | 2      | Lambda corr A              | %    | 0.1   | int16 | 50Hz  | 1.67 and newer | Short term lambda-correction applied to bank A cylinders |
+// | 0x530   | 0      | Battery voltage            | V    | 0.01  | int16 | 10Hz  | 1.67 and newer |         |
+// | 0x530   | 4      | Intake air temp            | °C   | 0.1   | int16 | 10Hz  | 1.67 and newer |         |
+// | 0x530   | 6      | Coolant temp               | °C   | 0.1   | int16 | 10Hz  | 1.67 and newer |         |
+// | 0x536   | 0      | Gear                       |      | 1     | int16 | 10Hz  | 1.79 and newer | Calculated manual transmission gear or commanded gear |
+// | 0x536   | 4      | Oil pressure               | kPa  | 0.1   | int16 | 10Hz  | 1.135 and newer |         |
+// | 0x536   | 6      | Oil temp                   | °C   | 0.1   | int16 | 10Hz  | 1.135 and newer |         |
+// | 0x537   | 4      | Coolant pressure           | kPa  | 0.1   | int16 | 10Hz  | 1.135 and newer |         |
+// | 0x527   | 6      | Lambda target              |      | 0.001 | int16 | 50Hz  | 1.135 and newer |         |
+// | 0x542   | 4      | ECU errors code(s)         |      | 0.1   | int16 | 10Hz  | 1.135 and newer |         |
+
 //#define ID_SENSOR_DATA 0x102  // CAN message ID for front right wheel and sensors potentiometer and accelerator
 //#define ID_SENSOR_DATA 0x202  // CAN message ID for front right wheel and sensors gyroscope and hall-effect
 
