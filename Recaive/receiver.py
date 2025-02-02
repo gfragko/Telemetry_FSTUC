@@ -4,6 +4,7 @@ import struct
 import matplotlib.pyplot as plt
 import time
 import csv
+
 # sudo ip link set can0 up type can bitrate 1000000
 # sudo ip link set can0 down
 # ip link show can0
@@ -24,13 +25,15 @@ def print_sensor_data(id,data_bytes):
         sensor_value = convert_sensor_data(sensor_bytes)
         sensor_data.append(sensor_value)
     
+    current_time = time.time()
+    real_time_stamp = time.strftime('%H:%M:%S') + f".{int(time.time() * 1000) % 1000:03d}"  # HH:MM:SS.mmm
     # Εκτύπωση των τιμών των αισθητήρων για το συγκεκριμένο ID
     if id == 0x101:
-        print(f"ID: 0x{id:X} | Potentiometer: {sensor_data[0]}, Ax: {sensor_data[1]}, Ay: {sensor_data[2]}, Az: {sensor_data[3]}")
+        print(f"[{real_time_stamp}] ID: 0x{id:X} | Potentiometer: {sensor_data[0]}, Ax: {sensor_data[1]}, Ay: {sensor_data[2]}, Az: {sensor_data[3]}")
     elif id == 0x201:
-        print(f"ID: 0x{id:X} | Potentiometer: {sensor_data[0]}, Gx: {sensor_data[1]}, Gy: {sensor_data[2]}, Gz: {sensor_data[3]}")
+        print(f"[{real_time_stamp}] ID: 0x{id:X} | Potentiometer: {sensor_data[0]}, Gx: {sensor_data[1]}, Gy: {sensor_data[2]}, Gz: {sensor_data[3]}")
     else:
-        print(f"Other ID: 0x{id:X} | Sensor 1: {sensor_data[0]}, Sensor 2: {sensor_data[1]}, Sensor 3: {sensor_data[2]}, Sensor 4: {sensor_data[3]}")
+        print(f"[{real_time_stamp}] Other ID: 0x{id:X} | Sensor 1: {sensor_data[0]}, Sensor 2: {sensor_data[1]}, Sensor 3: {sensor_data[2]}, Sensor 4: {sensor_data[3]}")
 
 
 def receive_filtered_can_messages(channel="can0"):
@@ -154,7 +157,7 @@ def live_plot_can(channel="can0", bitrate=500000):
     print(f"Live plotting for ID=0x101 and ID=0x201 on {channel} (bitrate={bitrate})")
     print("Πατήστε Ctrl+C για διακοπή.\n")
 
-    PLOT_INTERVAL = 0.0001  # σχεδίαση ~20 φορές/δευτ.
+    PLOT_INTERVAL = 0.000001  # σχεδίαση ~20 φορές/δευτ.
     last_plot_time = time.time()
 
     try:
@@ -232,11 +235,11 @@ def live_plot_can(channel="can0", bitrate=500000):
             if (now - last_plot_time) >= PLOT_INTERVAL:
                 fig101.canvas.draw()
                 fig201.canvas.draw()
-                plt.pause(0.000001)
+                plt.pause(0.0000001)
                 last_plot_time = now
 
             # 4) Μικρό delay για να μην τρέχει το loop στο 100% CPU
-            time.sleep(0.00001)
+            time.sleep(0.000001)
 
     except KeyboardInterrupt:
         print("\nUser interrupted. Stopping live plot...")
@@ -269,7 +272,7 @@ def log_can_frames_to_csv(csv_filename, channel="can0", bitrate=500000):
     with open(csv_filename, 'w', newline='') as f:
         writer = csv.writer(f)
         # Επικεφαλίδες στηλών
-        writer.writerow(["timestamp_sec", "arbitration_id", "dlc", "data_hex"])
+        writer.writerow(["Timestamp", "ID", "Sensor1", "Sensor2", "Sensor3", "Sensor4"])
 
         print(f"Logging CAN frames to {csv_filename} (channel={channel}, bitrate={bitrate})")
         print("Πατήστε Ctrl+C για διακοπή.\n")
@@ -287,17 +290,24 @@ def log_can_frames_to_csv(csv_filename, channel="can0", bitrate=500000):
 
                 # Αποθήκευση στο CSV
                 for msg in new_msgs:
-                    timestamp_sec = time.time() - start_time
+                    current_time = time.time()
+                    real_time_stamp = time.strftime('%H:%M:%S') + f".{int(time.time() * 1000) % 1000:03d}"  # HH:MM:SS.mmm
                     arbitration_id = msg.arbitration_id
-                    dlc = msg.dlc  # ή len(msg.data)
                     data_hex = msg.data.hex()
+
+                    sensor_data = []
+                    for i in range(0, len(data_hex), 4):
+                    # Παίρνουμε κάθε ζεύγος bytes για κάθε αισθητήρα (2 bytes ανά αισθητήρα)
+                        sensor_bytes = bytes.fromhex(data_hex[i:i+4])
+                        sensor_value = convert_sensor_data(sensor_bytes)
+                        sensor_data.append(sensor_value)
 
                     # Αν θες να φιλτράρεις μόνο 0x101 & 0x201, π.χ.:
                     # if arbitration_id not in [0x101, 0x201]:
                     #    continue
-
+                    
                     # Γράψε τη γραμμή στο CSV
-                    writer.writerow([f"{timestamp_sec:.4f}", f"0x{arbitration_id:X}", dlc, data_hex])
+                    writer.writerow([f"{real_time_stamp}", f"0x{arbitration_id:X}", f"{sensor_data[0]}", f"{sensor_data[1]}", f"{sensor_data[2]}", f"{sensor_data[3]}"])
 
                 # Μικρός ύπνος για να μην είμαστε στο 100% CPU
                 time.sleep(0.0001)
@@ -307,7 +317,18 @@ def log_can_frames_to_csv(csv_filename, channel="can0", bitrate=500000):
         finally:
             bus.shutdown()
 
+
+################################################################################
+# 3) ???????? ??? Live Plot
+################################################################################
+    
+
 if __name__ == "__main__":
-    #receive_filtered_can_messages()
+    receive_filtered_can_messages()
     #live_plot_can()
-    log_can_frames_to_csv("test1.csv")
+    #live_plot_can_pyqtgraph()
+    # log_can_frames_to_csv("testhmmy.csv")
+
+    #canvas = LiveCANPlot("can0", 500000)
+    #canvas.show()
+    #app.run()
