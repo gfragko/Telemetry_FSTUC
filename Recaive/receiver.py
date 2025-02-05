@@ -11,6 +11,132 @@ import csv
 # ip -details link show can0
 # sudo raspi-config
 
+# ------------------------------------    
+# Απλές συναρτήσεις αποκωδικοποίησης
+# ------------------------------------
+def decode_message_101_201(arbitration_id, data_bytes_hex):
+    sensor_data = []
+    for i in range(0, len(data_bytes_hex), 4):
+        sensor_bytes = bytes.fromhex(data_bytes_hex[i:i+4])
+        val = struct.unpack('<h', sensor_bytes)[0]
+        sensor_data.append(val)
+
+    if arbitration_id == 0x101:
+        decoded = {
+            'Potentiometer': sensor_data[0],
+            'Ax': sensor_data[1],
+            'Ay': sensor_data[2],
+            'Az': sensor_data[3]
+        }
+    elif arbitration_id == 0x201:
+        decoded = {
+            'Potentiometer': sensor_data[0],
+            'Gx': sensor_data[1],
+            'Gy': sensor_data[2],
+            'Gz': sensor_data[3]
+        }
+    else:
+        decoded = {
+            'UnknownSensor1': sensor_data[0],
+            'UnknownSensor2': sensor_data[1],
+            'UnknownSensor3': sensor_data[2],
+            'UnknownSensor4': sensor_data[3]
+        }
+    return decoded
+
+def decode_message_ecu(can_id, data):
+    """
+    Παράδειγμα λογικής από το script 2 (decode_ecu_message).
+    can_id: ακέραιος (π.χ. 0x520)
+    data: raw bytes (π.χ. b'\x00\x7A\x01\x00...')
+    Επιστρέφει ένα dict με τα αποκωδικοποιημένα στοιχεία.
+    """
+    sensor_values = {}
+    try:
+        if can_id == 0x520:
+            if len(data) >= 8:
+                rpm, = struct.unpack_from('<h', data, 0)
+                throttle, = struct.unpack_from('<h', data, 2)
+                map_val, = struct.unpack_from('<h', data, 4)
+                lambda_val, = struct.unpack_from('<h', data, 6)
+
+                sensor_values['RPM'] = rpm
+                sensor_values['Throttle'] = round(throttle * 0.1, 1)
+                sensor_values['MAP'] = round(map_val * 0.1, 1)
+                sensor_values['Lambda'] = round(lambda_val * 0.001, 3)
+        elif can_id == 0x521:
+            if len(data) >= 8:
+                lambda_a, = struct.unpack_from('<h', data, 0)
+                ignition_angle, = struct.unpack_from('<h', data, 4)
+                ignition_cut, = struct.unpack_from('<h', data, 6)
+
+                sensor_values['Lambda A'] = round(lambda_a * 0.001, 3)
+                sensor_values['Ignition Angle'] = round(ignition_angle * 0.1, 1)
+                sensor_values['Ignition Cut'] = ignition_cut
+        elif can_id == 0x522:
+            if len(data) >= 8:
+                fuel_cut, = struct.unpack_from('<h', data, 4)
+                vehicle_speed, = struct.unpack_from('<h', data, 6)
+
+                sensor_values['Fuel Cut'] = fuel_cut
+                sensor_values['Vehicle Speed'] = round(vehicle_speed * 0.1, 1)
+        elif can_id == 0x524:
+            if len(data) >= 4:
+                lambda_corr_a, = struct.unpack_from('<h', data, 2)
+                sensor_values['Lambda Corr A'] = round(lambda_corr_a * 0.1, 1)
+        elif can_id == 0x530:
+            if len(data) >= 8:
+                batt_voltage, = struct.unpack_from('<h', data, 0)
+                intake_air_temp, = struct.unpack_from('<h', data, 4)
+                coolant_temp, = struct.unpack_from('<h', data, 6)
+
+                sensor_values['Battery Voltage'] = round(batt_voltage * 0.01, 2)
+                sensor_values['Intake Air Temp'] = round(intake_air_temp * 0.1, 1)
+                sensor_values['Coolant Temp'] = round(coolant_temp * 0.1, 1)
+        elif can_id == 0x536:
+            if len(data) >= 8:
+                gear, = struct.unpack_from('<h', data, 0)
+                oil_pressure, = struct.unpack_from('<h', data, 4)
+                oil_temp, = struct.unpack_from('<h', data, 6)
+
+                sensor_values['Gear'] = gear
+                sensor_values['Oil Pressure'] = round(oil_pressure * 0.1, 1)
+                sensor_values['Oil Temp'] = round(oil_temp * 0.1, 1)
+        elif can_id == 0x537:
+            if len(data) >= 6:
+                coolant_pressure, = struct.unpack_from('<h', data, 4)
+                sensor_values['Coolant Pressure'] = round(coolant_pressure * 0.1, 1)
+        elif can_id == 0x527:
+            if len(data) >= 8:
+                lambda_target, = struct.unpack_from('<h', data, 6)
+                sensor_values['Lambda Target'] = round(lambda_target * 0.001, 3)
+        elif can_id == 0x542:
+            if len(data) >= 6:
+                ecu_errors, = struct.unpack_from('<h', data, 4)
+                sensor_values['ECU Errors'] = ecu_errors
+        else:
+            # Αν δεν αναγνωρίζουμε το ID, επέστρεψε απλά raw data
+            sensor_values['Unknown'] = [f"0x{b:02X}" for b in data]
+    except struct.error as e:
+        sensor_values['Error'] = f"Struct error: {e}"
+
+    return sensor_values
+
+def unified_decode(can_id, data):
+    """
+    Ενιαία συνάρτηση που αποφασίζει αν πρόκειται για 0x101/0x201 (script 1) ή για ECU (script 2).
+    Επιστρέφει dict με τα δεδομένα.
+    """
+    if can_id in [0x101, 0x201]:
+        # Εδώ το data υποθέτουμε ότι είναι ήδη bytes. Στο script1 όμως ήθελες data.hex().
+        # Για συνέπεια, μετατρέπουμε σε hex κι εφαρμόζουμε decode_message_101_201.
+        data_hex = data.hex()  # bytes -> "AB12..."
+        return decode_message_101_201(can_id, data_hex)
+    else:
+        # Χειριζόμαστε το ECU script
+        return decode_message_ecu(can_id, data)
+
+
 def convert_sensor_data(sensor_bytes):
 # Μετατροπή σε signed 16-bit integer (little-endian)
     real_value = struct.unpack('<h', sensor_bytes)[0] # '<h' για signed short (2 bytes) little-endian
@@ -293,14 +419,16 @@ def log_can_frames_to_csv(csv_filename, channel="can0", bitrate=500000):
                     current_time = time.time()
                     real_time_stamp = time.strftime('%H:%M:%S') + f".{int(time.time() * 1000) % 1000:03d}"  # HH:MM:SS.mmm
                     arbitration_id = msg.arbitration_id
-                    data_hex = msg.data.hex()
+                    #data_hex = msg.data.hex()
 
-                    sensor_data = []
-                    for i in range(0, len(data_hex), 4):
+                    #sensor_data = []
+                    #for i in range(0, len(data_hex), 4):
                     # Παίρνουμε κάθε ζεύγος bytes για κάθε αισθητήρα (2 bytes ανά αισθητήρα)
-                        sensor_bytes = bytes.fromhex(data_hex[i:i+4])
-                        sensor_value = convert_sensor_data(sensor_bytes)
-                        sensor_data.append(sensor_value)
+                        #sensor_bytes = bytes.fromhex(data_hex[i:i+4])
+                        #sensor_value = convert_sensor_data(sensor_bytes)
+                        #sensor_data.append(sensor_value)
+                    
+                    sensor_data = unified_decode(arbitration_id,msg.data)
 
                     # Αν θες να φιλτράρεις μόνο 0x101 & 0x201, π.χ.:
                     # if arbitration_id not in [0x101, 0x201]:
