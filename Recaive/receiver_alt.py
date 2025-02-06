@@ -3,6 +3,7 @@ import subprocess
 import struct
 import matplotlib.pyplot as plt
 import time
+from datetime import datetime
 import csv
 
 # sudo ip link set can0 up type can bitrate 1000000
@@ -142,21 +143,27 @@ def unified_decode(can_id, data):
 
 def print_and_save_sensor_data(id,data,csv_writer):
     # Μετατροπή των δεδομένων του κάθε αισθητήρα
-    
+    real_time_stamp = time.strftime('%H:%M:%S') + f".{int(time.time() * 1000) % 1000:03d}"  # HH:MM:SS.mmm
     sensor_dicts = unified_decode(id, data)
     
+    text = f"[{real_time_stamp}] ID: 0x{id:X} -> "
+
     keys = []
     sensor_data = []
-    for key,values in sensor_dicts.keys(),sensor_dicts.values:
+    for key,value in sensor_dicts.items():
         keys.append(key)
-        sensor_data.append(values)
-    
-    
-    real_time_stamp = time.strftime('%H:%M:%S') + f".{int(time.time() * 1000) % 1000:03d}"  # HH:MM:SS.mmm
-    # Εκτύπωση των τιμών των αισθητήρων για το συγκεκριμένο ID
-    print(f"[{real_time_stamp}] ID: 0x{id:X} | {key[0]}: {sensor_data[0]}, {key[1]}: {sensor_data[1]}, {key[2]}: {sensor_data[2]}, {key[3]}: {sensor_data[3]}")
-    csv_writer.writerow([f"{real_time_stamp}", f"0x{id:X}", f"{sensor_data [0]}", f"{sensor_data [1]}", f"{sensor_data [2]}", f"{sensor_data [3]}"])
+        sensor_data.append(value)
+        text += f"{key}: {value} | "
 
+    while len(keys) < 4:
+        keys.append(0)
+        sensor_data.append(0)
+    
+    print(text)
+    # print(f"[{real_time_stamp}] ID: 0x{id:X} | {key[0]}: {sensor_data[0]}, {key[1]}: {sensor_data[1]}, {key[2]}: {sensor_data[2]}, {key[3]}: {sensor_data[3]}")
+    csv_writer.writerow([f"{real_time_stamp}", f"0x{id:X}", f"{sensor_data [0]}", f"{sensor_data [1]}", f"{sensor_data [2]}", f"{sensor_data [3]}"])
+    
+    
 def receive_can_messages(bus,channel,csv_writer):
     """Receives and prints CAN messages with a specific ID."""
 
@@ -169,204 +176,18 @@ def receive_can_messages(bus,channel,csv_writer):
             if message.arbitration_id in can_ids:
                 print_and_save_sensor_data(message.arbitration_id, message.data, csv_writer)
             
+            time.sleep(0.02)
+            
     except KeyboardInterrupt:
         print("\nStopped.")
     finally:
         bus.shutdown()
 
-# ------------------------------------------------------------------
-#                     *** 2) ΝΕΕΣ ΣΥΝΑΡΤΗΣΕΙΣ ***
-# ------------------------------------------------------------------
-def parse_sensor_data(data_hex):
-    """
-    Διαβάζει το 'data_hex' (π.χ. '0F1A2B3C...') σε ομάδες των 4 hex
-    χαρακτήρων (2 bytes) και επιστρέφει λίστα από signed 16-bit τιμές.
-    """
-    sensor_values = []
-    for i in range(0, len(data_hex), 4):
-        # Παίρνουμε 4 χαρακτήρες κάθε φορά (π.χ. '0F1A')
-        two_bytes = bytes.fromhex(data_hex[i:i+4])
-        # Μετατρέπουμε σε signed 16-bit (little-endian)
-        val = struct.unpack('<h', two_bytes)[0]
-        sensor_values.append(val)
-    return sensor_values
-
-def live_plot_can(channel="can0", bitrate=500000):
-    """
-    Δημιουργεί 2 Figures:
-      - Figure 1: ID=0x101
-         * 2 subplots:
-             (α) μόνο Pot
-             (β) Ax, Ay, Az στην ίδια γραφική παράσταση
-      - Figure 2: ID=0x201
-         * 2 subplots:
-             (α) μόνο Pot
-             (β) Gx, Gy, Gz στην ίδια γραφική παράσταση
-    Χρησιμοποιεί draining λογική (non-blocking recv) για ελάχιστο lag.
-    """
-
-    # 1) Ρύθμιση του CAN interface
-    # subprocess.run(['sudo', 'ip', 'link', 'set', channel, 'down'])
-    # subprocess.run(['sudo', 'ip', 'link', 'set', channel, 'up', 'type', 'can', 'bitrate', str(bitrate)])
-    # bus = can.interface.Bus(channel=channel, bustype="socketcan")
-
-    can_id_101 = 0x101
-    can_id_201 = 0x201
-
-    # 2) FIGURE για ID=0x101
-    # --------------------------------------------------------
-    fig101, (ax101_pot, ax101_3axes) = plt.subplots(2, 1, figsize=(7, 6), sharex=True)
-    fig101.suptitle("ID = 0x101", fontsize=14)
-
-    # (α) Μόνο Pot
-    ax101_pot.set_ylabel("Pot(101)")
-    ax101_pot.grid(True)
-    line_pot_101, = ax101_pot.plot([], [], label='Pot(101)', color='blue')
-
-    # (β) Ax, Ay, Az στο ίδιο subplot
-    ax101_3axes.set_ylabel("Ax / Ay / Az")
-    ax101_3axes.set_xlabel("Time (s)")
-    ax101_3axes.grid(True)
-    line_ax_101, = ax101_3axes.plot([], [], label='Ax(101)', color='orange')
-    line_ay_101, = ax101_3axes.plot([], [], label='Ay(101)', color='green')
-    line_az_101, = ax101_3axes.plot([], [], label='Az(101)', color='red')
-    ax101_3axes.legend()
-
-    # Λίστες δεδομένων χρόνου & τιμών
-    t_101 = []
-    pot_101 = []
-    ax_101_list = []
-    ay_101_list = []
-    az_101_list = []
-
-    # 3) FIGURE για ID=0x201
-    # --------------------------------------------------------
-    fig201, (ax201_pot, ax201_3axes) = plt.subplots(2, 1, figsize=(7, 6), sharex=True)
-    fig201.suptitle("ID = 0x201", fontsize=14)
-
-    # (α) Μόνο Pot
-    ax201_pot.set_ylabel("Pot(201)")
-    ax201_pot.grid(True)
-    line_pot_201, = ax201_pot.plot([], [], label='Pot(201)', color='blue')
-
-    # (β) Gx, Gy, Gz στο ίδιο subplot
-    ax201_3axes.set_ylabel("Gx / Gy / Gz")
-    ax201_3axes.set_xlabel("Time (s)")
-    ax201_3axes.grid(True)
-    line_gx_201, = ax201_3axes.plot([], [], label='Gx(201)', color='orange')
-    line_gy_201, = ax201_3axes.plot([], [], label='Gy(201)', color='green')
-    line_gz_201, = ax201_3axes.plot([], [], label='Gz(201)', color='red')
-    ax201_3axes.legend()
-
-    # Λίστες δεδομένων χρόνου & τιμών
-    t_201 = []
-    pot_201 = []
-    gx_201_list = []
-    gy_201_list = []
-    gz_201_list = []
-
-    # --------------------------------------------------------
-    plt.ion()
-    start_time = time.time()
-
-    print(f"Live plotting for ID=0x101 and ID=0x201 on {channel} (bitrate={bitrate})")
-    print("Πατήστε Ctrl+C για διακοπή.\n")
-
-    PLOT_INTERVAL = 0.000001  # σχεδίαση ~20 φορές/δευτ.
-    last_plot_time = time.time()
-
-    try:
-        while True:
-            # 1) Διάβασε ΟΛΑ τα διαθέσιμα μηνύματα (drain queue)
-            new_msgs = []
-            while True:
-                msg = bus.recv(timeout=0.0)
-                if msg is None:
-                    break
-                new_msgs.append(msg)
-
-            # 2) Επεξεργασία νέων μηνυμάτων
-            for msg in new_msgs:
-                # -- ID=0x101
-                if msg.arbitration_id == can_id_101:
-                    data_list = parse_sensor_data(msg.data.hex())
-                    current_time = time.time() - start_time
-                    # data_list: [Pot, Ax, Ay, Az]
-                    t_101.append(current_time)
-                    pot_101.append(data_list[0])
-                    ax_101_list.append(data_list[1])
-                    ay_101_list.append(data_list[2])
-                    az_101_list.append(data_list[3])
-
-                    # Ενημέρωση γραμμών (δεν σχεδιάζουμε ακόμα, το αφήνουμε για μετά)
-                    line_pot_101.set_xdata(t_101)
-                    line_pot_101.set_ydata(pot_101)
-
-                    line_ax_101.set_xdata(t_101)
-                    line_ax_101.set_ydata(ax_101_list)
-
-                    line_ay_101.set_xdata(t_101)
-                    line_ay_101.set_ydata(ay_101_list)
-
-                    line_az_101.set_xdata(t_101)
-                    line_az_101.set_ydata(az_101_list)
-
-                    # relim/autoscale
-                    ax101_pot.relim()
-                    ax101_pot.autoscale_view()
-                    ax101_3axes.relim()
-                    ax101_3axes.autoscale_view()
-
-                # -- ID=0x201
-                elif msg.arbitration_id == can_id_201:
-                    data_list = parse_sensor_data(msg.data.hex())
-                    current_time = time.time() - start_time
-                    # data_list: [Pot, Gx, Gy, Gz]
-                    t_201.append(current_time)
-                    pot_201.append(data_list[0])
-                    gx_201_list.append(data_list[1])
-                    gy_201_list.append(data_list[2])
-                    gz_201_list.append(data_list[3])
-
-                    line_pot_201.set_xdata(t_201)
-                    line_pot_201.set_ydata(pot_201)
-
-                    line_gx_201.set_xdata(t_201)
-                    line_gx_201.set_ydata(gx_201_list)
-
-                    line_gy_201.set_xdata(t_201)
-                    line_gy_201.set_ydata(gy_201_list)
-
-                    line_gz_201.set_xdata(t_201)
-                    line_gz_201.set_ydata(gz_201_list)
-
-                    ax201_pot.relim()
-                    ax201_pot.autoscale_view()
-                    ax201_3axes.relim()
-                    ax201_3axes.autoscale_view()
-
-            # 3) Κάνουμε redraw μόνο κάθε PLOT_INTERVAL
-            now = time.time()
-            if (now - last_plot_time) >= PLOT_INTERVAL:
-                fig101.canvas.draw()
-                fig201.canvas.draw()
-                plt.pause(0.0000001)
-                last_plot_time = now
-
-            # 4) Μικρό delay για να μην τρέχει το loop στο 100% CPU
-            time.sleep(0.000001)
-
-    except KeyboardInterrupt:
-        print("\nUser interrupted. Stopping live plot...")
-
-    finally:
-        bus.shutdown()
-        plt.ioff()
-        plt.show()
-# --------------------------------------------------------------
 
 if __name__ == "__main__":
-    csv_filename = "local_log_file.csv"
+
+    now = datetime.now()
+    csv_filename = now.strftime("%Y-%m-%d_%H.%M.%S")+".csv"
     channel="can0"
     bitrate=500000
 
@@ -380,10 +201,3 @@ if __name__ == "__main__":
         # Επικεφαλίδες στηλών
         writer.writerow(["Timestamp", "ID", "Sensor1", "Sensor2", "Sensor3", "Sensor4"])
         receive_can_messages(bus,channel,writer)
-    #live_plot_can()
-    #live_plot_can_pyqtgraph()
-    # log_can_frames_to_csv("testhmmy.csv")
-
-    #canvas = LiveCANPlot("can0", 500000)
-    #canvas.show()
-    #app.run()

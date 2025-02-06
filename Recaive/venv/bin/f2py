@@ -1,4 +1,4 @@
-#!/Users/vasilisk/Desktop/Telemetry_FSTUC/Recaive/venv/bin/python3
+#!/home/FSTUC/Desktop/Telemetry_FSTUC/Recaive/venv/bin/python3
 # -*- coding: utf-8 -*-
 import re
 import sys
