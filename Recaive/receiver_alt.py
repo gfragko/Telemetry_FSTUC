@@ -69,7 +69,7 @@ def decode_message_ecu(can_id, data):
                 ignition_angle, = struct.unpack_from('<h', data, 4)
                 ignition_cut, = struct.unpack_from('<h', data, 6)
 
-                sensor_values['Lambd                                                                                                                                                                                                                                                                                          a A'] = round(lambda_a * 0.001, 3)
+                sensor_values['Lambd A'] = round(lambda_a * 0.001,3)                                                                                                                                                                                                                                                         
                 sensor_values['Ignition Angle'] = round(ignition_angle * 0.1, 1)
                 sensor_values['Ignition Cut'] = ignition_cut
         elif can_id == 0x522:
@@ -176,7 +176,7 @@ def receive_can_messages(bus,channel,csv_writer):
             if message.arbitration_id in can_ids:
                 print_and_save_sensor_data(message.arbitration_id, message.data, csv_writer)
             
-            time.sleep(0.02)
+            # time.sleep(0.02)
             
     except KeyboardInterrupt:
         print("\nStopped.")
@@ -187,7 +187,7 @@ def receive_can_messages(bus,channel,csv_writer):
 if __name__ == "__main__":
 
     now = datetime.now()
-    csv_filename = now.strftime("%Y-%m-%d_%H.%M.%S")+".csv"
+    csv_filename = "content//"+now.strftime("%Y-%m-%d_%H.%M.%S")+".csv"
     channel="can0"
     bitrate=500000
 
