@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import time
 from datetime import datetime
 import csv
+import os
 
 # sudo ip link set can0 up type can bitrate 1000000
 # sudo ip link set can0 down
@@ -183,11 +184,26 @@ def receive_can_messages(bus,channel,csv_writer):
     finally:
         bus.shutdown()
 
+def find_filePath():
+    folder_path = ""
+    if os.path.isdir("/media/FSTUC/INTENSO"):
+        folder_path = "/media/FSTUC/INTENSO/"
+        print("Use INTENSO USB -Plastic")
+    elif os.path.isdir("/media/FSTUC/ESD-USB"):
+        folder_path = "/media/FSTUC/ESD-USB/"
+        print("Use INTENSO USB -Grey")
+    else:
+        folder_path = ""
+        print("No usb isnserted -> Local Logging")
+    
+    return folder_path
+
 
 if __name__ == "__main__":
 
     now = datetime.now()
-    csv_filename = "content//"+now.strftime("%Y-%m-%d_%H.%M.%S")+".csv"
+    filepath = find_filePath()
+    csv_filename = filepath+now.strftime("%Y-%m-%d_%H.%M.%S")+".csv"
     channel="can0"
     bitrate=500000
 
