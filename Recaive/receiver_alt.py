@@ -68,7 +68,7 @@ def decode_message_ecu(can_id, data):
                 ignition_angle, = struct.unpack_from('<h', data, 4)
                 ignition_cut, = struct.unpack_from('<h', data, 6)
 
-                sensor_values['Lambda A'] = round(lambda_a * 0.001,3)  
+                sensor_values['Lambd                                                                                                                                                                                                                                                                                          a A'] = round(lambda_a * 0.001, 3)
                 sensor_values['Ignition Angle'] = round(ignition_angle * 0.1, 1)
                 sensor_values['Ignition Cut'] = ignition_cut
         elif can_id == 0x522:
@@ -115,8 +115,6 @@ def decode_message_ecu(can_id, data):
         else:
             # Αν δεν αναγνωρίζουμε το ID, επέστρεψε απλά raw data
             sensor_values['Unknown'] = [f"0x{b:02X}" for b in data]
-
-        
     except struct.error as e:
         sensor_values['Error'] = f"Struct error: {e}"
 
@@ -127,59 +125,50 @@ def unified_decode(can_id, data):
     Ενιαία συνάρτηση που αποφασίζει αν πρόκειται για 0x101/0x201 (script 1) ή για ECU (script 2).
     Επιστρέφει dict με τα δεδομένα.
     """
+    
+    can_ids = [0x101, 0x201, 0x520, 0x521, 0x522, 0x524, 0x530, 0x536, 0x537, 0x527, 0x542]
+
     if can_id in [0x101, 0x201]:
         # Εδώ το data υποθέτουμε ότι είναι ήδη bytes. Στο script1 όμως ήθελες data.hex().
         # Για συνέπεια, μετατρέπουμε σε hex κι εφαρμόζουμε decode_message_101_201.
         data_hex = data.hex()  # bytes -> "AB12..."
         return decode_message_101_201(can_id, data_hex)
-    else:
+    elif can_id in can_ids:
         # Χειριζόμαστε το ECU script
         return decode_message_ecu(can_id, data)
+    else: 
+        return
 
 
-def convert_sensor_data(sensor_bytes):
-# Μετατροπή σε signed 16-bit integer (little-endian)
-    real_value = struct.unpack('<h', sensor_bytes)[0] # '<h' για signed short (2 bytes) little-endian
-    return real_value
-
-def print_sensor_data(id,data_bytes):
+def print_and_save_sensor_data(id,data,csv_writer):
     # Μετατροπή των δεδομένων του κάθε αισθητήρα
-    sensor_data = []
-    for i in range(0, len(data_bytes), 4):
-    # Παίρνουμε κάθε ζεύγος bytes για κάθε αισθητήρα (2 bytes ανά αισθητήρα)
-        sensor_bytes = bytes.fromhex(data_bytes[i:i+4])
-        sensor_value = convert_sensor_data(sensor_bytes)
-        sensor_data.append(sensor_value)
     
-    current_time = time.time()
+    sensor_dicts = unified_decode(id, data)
+    
+    keys = []
+    sensor_data = []
+    for key,values in sensor_dicts.keys(),sensor_dicts.values:
+        keys.append(key)
+        sensor_data.append(values)
+    
+    
     real_time_stamp = time.strftime('%H:%M:%S') + f".{int(time.time() * 1000) % 1000:03d}"  # HH:MM:SS.mmm
     # Εκτύπωση των τιμών των αισθητήρων για το συγκεκριμένο ID
-    if id == 0x101:
-        print(f"[{real_time_stamp}] ID: 0x{id:X} | Potentiometer: {sensor_data[0]}, Ax: {sensor_data[1]}, Ay: {sensor_data[2]}, Az: {sensor_data[3]}")
-    elif id == 0x201:
-        print(f"[{real_time_stamp}] ID: 0x{id:X} | Potentiometer: {sensor_data[0]}, Gx: {sensor_data[1]}, Gy: {sensor_data[2]}, Gz: {sensor_data[3]}")
-    else:
-        print(f"[{real_time_stamp}] Other ID: 0x{id:X} | Sensor 1: {sensor_data[0]}, Sensor 2: {sensor_data[1]}, Sensor 3: {sensor_data[2]}, Sensor 4: {sensor_data[3]}")
+    print(f"[{real_time_stamp}] ID: 0x{id:X} | {key[0]}: {sensor_data[0]}, {key[1]}: {sensor_data[1]}, {key[2]}: {sensor_data[2]}, {key[3]}: {sensor_data[3]}")
+    csv_writer.writerow([f"{real_time_stamp}", f"0x{id:X}", f"{sensor_data [0]}", f"{sensor_data [1]}", f"{sensor_data [2]}", f"{sensor_data [3]}"])
 
-
-def receive_filtered_can_messages(channel="can0"):
+def receive_can_messages(bus,channel,csv_writer):
     """Receives and prints CAN messages with a specific ID."""
-    #subprocess.run(['sudo', 'modprobe', 'mcp251x'])
-    #subprocess.run(['sudo', 'modprobe', 'can_dev'])
-    subprocess.run(['sudo', 'ip', 'link', 'set', 'can0', 'down'])
-    subprocess.run(['sudo', 'ip', 'link', 'set', 'can0', 'up', 'type', 'can', 'bitrate', '500000'])
-    bus = can.interface.Bus(channel=channel, bustype="socketcan")
 
-    print(f"Listening for CAN IDs 0x101 and 0x201 on {channel}...")
-    can_ids = [0x101, 0x201]
+    print(f"Listening for CAN IDs on {channel}...")
+    can_ids = [0x101, 0x201, 0x520, 0x521, 0x522, 0x524, 0x530, 0x536, 0x537, 0x527, 0x542]
 
     try:
         while True:
             message = bus.recv() # Receive message
-            for id in can_ids:
-                if message.arbitration_id == id:
-                    #print(f"Received: ID=0x{message.arbitration_id:X}, Data={message.data.hex()}")
-                    print_sensor_data(message.arbitration_id, message.data.hex())
+            if message.arbitration_id in can_ids:
+                print_and_save_sensor_data(message.arbitration_id, message.data, csv_writer)
+            
     except KeyboardInterrupt:
         print("\nStopped.")
     finally:
@@ -217,9 +206,9 @@ def live_plot_can(channel="can0", bitrate=500000):
     """
 
     # 1) Ρύθμιση του CAN interface
-    subprocess.run(['sudo', 'ip', 'link', 'set', channel, 'down'])
-    subprocess.run(['sudo', 'ip', 'link', 'set', channel, 'up', 'type', 'can', 'bitrate', str(bitrate)])
-    bus = can.interface.Bus(channel=channel, bustype="socketcan")
+    # subprocess.run(['sudo', 'ip', 'link', 'set', channel, 'down'])
+    # subprocess.run(['sudo', 'ip', 'link', 'set', channel, 'up', 'type', 'can', 'bitrate', str(bitrate)])
+    # bus = can.interface.Bus(channel=channel, bustype="socketcan")
 
     can_id_101 = 0x101
     can_id_201 = 0x201
@@ -375,88 +364,22 @@ def live_plot_can(channel="can0", bitrate=500000):
         plt.ioff()
         plt.show()
 # --------------------------------------------------------------
-# 3) Επιλογή main: Είτε καλείς receive_filtered_can_messages(),
-#    είτε καλείς live_plot_can_fast().
-# --------------------------------------------------------------
 
-# ---------------------------------------------------------------
-# ΝΕΑ ΣΥΝΑΡΤΗΣΗ ΓΙΑ ΑΠΟΘΗΚΕΥΣΗ CAN FRAMES ΣΕ CSV
-# ---------------------------------------------------------------
-def log_can_frames_to_csv(csv_filename, channel="can0", bitrate=500000):
-    """
-    Συνάρτηση που ανοίγει το 'csv_filename' και καταγράφει ΟΛΑ τα CAN μηνύματα
-    (ή μπορείς να φιλτράρεις συγκεκριμένα IDs) με timestamp, arbitration_id, DLC, data (hex), κλπ.
-    Χρησιμοποιεί draining λογική για να μην μπλοκάρει το loop.
-    """
+if __name__ == "__main__":
+    csv_filename = "local_log_file.csv"
+    channel="can0"
+    bitrate=500000
 
     # Ρύθμιση interface
     subprocess.run(['sudo', 'ip', 'link', 'set', channel, 'down'])
     subprocess.run(['sudo', 'ip', 'link', 'set', channel, 'up', 'type', 'can', 'bitrate', str(bitrate)])
     bus = can.interface.Bus(channel=channel, bustype="socketcan")
 
-    # Άνοιγμα CSV για εγγραφή
     with open(csv_filename, 'w', newline='') as f:
         writer = csv.writer(f)
         # Επικεφαλίδες στηλών
         writer.writerow(["Timestamp", "ID", "Sensor1", "Sensor2", "Sensor3", "Sensor4"])
-
-        print(f"Logging CAN frames to {csv_filename} (channel={channel}, bitrate={bitrate})")
-        print("Πατήστε Ctrl+C για διακοπή.\n")
-        start_time = time.time()
-
-        try:
-            while True:
-                # Διαβάζουμε ΟΛΑ τα διαθέσιμα μηνύματα
-                new_msgs = []
-                while True:
-                    msg = bus.recv(timeout=0.0)
-                    if msg is None:
-                        break
-                    new_msgs.append(msg)
-
-                # Αποθήκευση στο CSV
-                for msg in new_msgs:
-                    current_time = time.time()
-                    real_time_stamp = time.strftime('%H:%M:%S') + f".{int(time.time() * 1000) % 1000:03d}"  # HH:MM:SS.mmm
-                    arbitration_id = msg.arbitration_id
-                    #data_hex = msg.data.hex()
-
-                    #sensor_data = []
-                    #for i in range(0, len(data_hex), 4):
-                    # Παίρνουμε κάθε ζεύγος bytes για κάθε αισθητήρα (2 bytes ανά αισθητήρα)
-                        #sensor_bytes = bytes.fromhex(data_hex[i:i+4])
-                        #sensor_value = convert_sensor_data(sensor_bytes)
-                        #sensor_data.append(sensor_value)
-                    
-                    sensor_data = unified_decode(arbitration_id,msg.data)
-
-                    # Αν θες να φιλτράρεις μόνο 0x101 & 0x201, π.χ.:
-                    # if arbitration_id not in [0x101, 0x201]:
-                    #    continue
-                    
-                    sens_values = []
-                    # Γράψε τη γραμμή στο CSV
-                    for value in sensor_data.values():
-                        sens_values.append(value)
-                        
-                    writer.writerow([f"{real_time_stamp}", f"0x{arbitration_id:X}", f"{sens_values [0]}", f"{sens_values [1]}", f"{sens_values [2]}", f"{sens_values [3]}"])
-
-                # Μικρός ύπνος για να μην είμαστε στο 100% CPU
-                time.sleep(0.0001)
-
-        except KeyboardInterrupt:
-            print("\nUser interrupted. CSV logging stopped.")
-        finally:
-            bus.shutdown()
-
-
-################################################################################
-# 3) ???????? ??? Live Plot
-################################################################################
-    
-
-if __name__ == "__main__":
-    receive_filtered_can_messages()
+        receive_can_messages(bus,channel,writer)
     #live_plot_can()
     #live_plot_can_pyqtgraph()
     # log_can_frames_to_csv("testhmmy.csv")
