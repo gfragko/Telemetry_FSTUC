@@ -70,7 +70,7 @@ def decode_message_ecu(can_id, data):
                 ignition_angle, = struct.unpack_from('<h', data, 4)
                 ignition_cut, = struct.unpack_from('<h', data, 6)
 
-                sensor_values['Lambd A'] = round(lambda_a * 0.001,3)                                                                                                                                                                                                                                                         
+                sensor_values['Lambda A'] = round(lambda_a * 0.001,3)                                                                                                                                                                                                                                                         
                 sensor_values['Ignition Angle'] = round(ignition_angle * 0.1, 1)
                 sensor_values['Ignition Cut'] = ignition_cut
         elif can_id == 0x522:
@@ -100,16 +100,20 @@ def decode_message_ecu(can_id, data):
                 oil_temp, = struct.unpack_from('<h', data, 6)
 
                 sensor_values['Gear'] = gear
-                sensor_values['Oil Pressure'] = round(oil_pressure * 0.001, 1)
+                sensor_values['Oil Pressure'] = round(oil_pressure * 0.001, 4)
                 sensor_values['Oil Temp'] = round(oil_temp * 0.1, 1)
         elif can_id == 0x537:
             if len(data) >= 6:
                 coolant_pressure, = struct.unpack_from('<h', data, 4)
-                sensor_values['Coolant Pressure'] = round(coolant_pressure * 0.001, 1)
+                sensor_values['Coolant Pressure'] = round(coolant_pressure * 0.001, 4)
         elif can_id == 0x527:
             if len(data) >= 8:
                 lambda_target, = struct.unpack_from('<h', data, 6)
                 sensor_values['Lambda Target'] = round(lambda_target * 0.001, 3)
+        elif can_id == 0x538:
+            if len(data) >= 8:
+                lambda_target, = struct.unpack_from('<h', data, 0)
+                sensor_values['Brake Pressure'] = round(lambda_target * 0.1, 1)
         elif can_id == 0x542:
             if len(data) >= 6:
                 ecu_errors, = struct.unpack_from('<h', data, 4)
@@ -128,7 +132,7 @@ def unified_decode(can_id, data):
     Επιστρέφει dict με τα δεδομένα.
     """
     
-    can_ids = [0x101, 0x201, 0x520, 0x521, 0x522, 0x524, 0x530, 0x536, 0x537, 0x527, 0x542]
+    can_ids = [0x101, 0x201, 0x520, 0x521, 0x522, 0x524, 0x530, 0x536, 0x537, 0x527, 0x542, 0x538]
 
     if can_id in [0x101, 0x201]:
         # Εδώ το data υποθέτουμε ότι είναι ήδη bytes. Στο script1 όμως ήθελες data.hex().
@@ -169,7 +173,7 @@ def receive_can_messages(bus,channel,csv_writer):
     """Receives and prints CAN messages with a specific ID."""
 
     print(f"Listening for CAN IDs on {channel}...")
-    can_ids = [0x101, 0x201, 0x520, 0x521, 0x522, 0x524, 0x530, 0x536, 0x537, 0x527, 0x542]
+    can_ids = [0x101, 0x201, 0x520, 0x521, 0x522, 0x524, 0x530, 0x536, 0x537, 0x527, 0x542, 0x538]
 
     try:
         while True:
