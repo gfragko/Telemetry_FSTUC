@@ -13,6 +13,10 @@ import os
 # ip -details link show can0
 # sudo raspi-config
 
+ACCEL_SENSITIVITY = 8192  # Assuming ±4g range (8,192 LSB/g)
+GYRO_SENSITIVITY = 65.5   # Assuming ±500°/s range (65.5 LSB/°/s)
+GRAVITY = 9.81  # m/s²
+
 def decode_message_101_201(arbitration_id, data_bytes_hex):
     sensor_data = []
     for i in range(0, len(data_bytes_hex), 4):
@@ -23,16 +27,16 @@ def decode_message_101_201(arbitration_id, data_bytes_hex):
     if arbitration_id == 0x101:
         decoded = {
             'Potentiometer': sensor_data[0],
-            'Ax': sensor_data[1],
-            'Ay': sensor_data[2],
-            'Az': sensor_data[3]
+            'Ax (m/s²)': (sensor_data[1] / ACCEL_SENSITIVITY) * GRAVITY,
+            'Ay (m/s²)': (sensor_data[2] / ACCEL_SENSITIVITY) * GRAVITY,
+            'Az (m/s²)': (sensor_data[3] / ACCEL_SENSITIVITY) * GRAVITY
         }
     elif arbitration_id == 0x201:
         decoded = {
             'Potentiometer': sensor_data[0],
-            'Gx': sensor_data[1],
-            'Gy': sensor_data[2],
-            'Gz': sensor_data[3]
+            'Gx (°/s)': sensor_data[1] / GYRO_SENSITIVITY,
+            'Gy (°/s)': sensor_data[2] / GYRO_SENSITIVITY,
+            'Gz (°/s)': sensor_data[3] / GYRO_SENSITIVITY
         }
     else:
         decoded = {
