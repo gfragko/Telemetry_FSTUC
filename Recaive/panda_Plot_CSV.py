@@ -4,7 +4,6 @@ import os
 from pathlib import Path
 import tkinter as tk
 from tkinter import filedialog
-from datetime import datetime
 
 # ============================================================================
 sensor_dict = {
@@ -33,13 +32,22 @@ root.withdraw()  # Hide the main window
 file_path = filedialog.askopenfilename(title="Select a file")
 df = pd.read_csv(file_path)
 
+
+# Get the first timestamp value
+first_timestamp = df.iloc[0, 0]  # First row, first column (Timestamp)
+# Convert to datetime format
+first_time = pd.to_datetime(first_timestamp, format='%H:%M:%S.%f')
+# Format as "hours-minutes"
+formatted_time = first_time.strftime("%H.%M")
+
+
 # Convert 'Timestamp' to datetime format for easier plotting
 df['Timestamp'] = pd.to_datetime(df['Timestamp'], format='%H:%M:%S.%f')
 
 # Get the list of unique CAN IDs
 can_ids = df['ID'].unique()
 
-plots_folder_name = "CSV_PLOTS "+datetime.now().strftime("%H-%M")
+plots_folder_name = "CSV_PLOTS "+formatted_time
 dir_name = Path(plots_folder_name)
 # Create the directory if it doesnt exist
 dir_name.mkdir(parents=True, exist_ok=True)
