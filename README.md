@@ -7,9 +7,15 @@ The arduino gets as input the measurements from the sensors, formats them and pa
 + ~~Fix arduino code for correct usage of RTC~~
 + ~~Transform arduino output for usage of CAN bus~~
 + ~~Send and receive can frames with mcp2515~~
-+ Save can messages on ECU
-+ Set up slaves to master to raspberry pi architecture 
++ ~~Save can messages on ECU~~
++ ~~Set up slaves to master to raspberry pi architecture~~ 
 + ~~Save data locally on raspberry pi via usb~~
++ Denoiser for sensor values
++ Mapping Data for cleaner y-axis
++ Pyqtgraph testing for csv plotting
++ X-Y-Z axis plotting for mpu data 
++ Rounding - Sampling timestamps to decrease x-axis noise
++ Setting up a rasberrry buttin to start telemetry logging
 + Send data through RF
 + Create GUI for live data
 + Raspberry Pi sever for live data (???)
