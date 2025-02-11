@@ -16,6 +16,7 @@ sensor_dict = {
     '0x530': ['Battery Voltage', 'Intake Air Temp', 'Coolant Temp', 'NO_SENSOR'],
     '0x536': ['Gear', 'Oil Pressure', 'Oil Temp', 'NO_SENSOR'],
     '0x537': ['Coolant Pressure', 'NO_SENSOR', 'NO_SENSOR', 'NO_SENSOR'],
+    '0x538': ['Brake Pressure'],
     '0x527': ['Lambda Target', 'NO_SENSOR', 'NO_SENSOR', 'NO_SENSOR'],
     '0x542': ['ECU Errors', 'NO_SENSOR', 'NO_SENSOR', 'NO_SENSOR']
 }
