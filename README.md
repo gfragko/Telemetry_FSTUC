@@ -12,7 +12,7 @@ The arduino gets as input the measurements from the sensors, formats them and pa
 + ~~Save data locally on raspberry pi via usb~~
 + Denoiser for sensor values
 + Mapping Data for cleaner y-axis
-+ Pyqtgraph testing for csv plotting
++ ~~Pyqtgraph testing for csv plotting~~
 + X-Y-Z axis plotting for mpu data 
 + Rounding - Sampling timestamps to decrease x-axis noise
 + Setting up a rasberrry buttin to start telemetry logging
