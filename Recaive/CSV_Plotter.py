@@ -4,7 +4,6 @@ from collections import defaultdict
 import tkinter as tk
 from tkinter import filedialog
 import pandas as pd
-from yaspin import yaspin
 import time
 import pickle
 import matplotlib.dates as mdates
@@ -102,7 +101,7 @@ df = pd.read_csv(file_path)
 
 
 sensor_data = read_csv_and_extract_data(file_path, sensor_dict)
-plot_sensors_subplots(sensor_data, ['RPM', 'Throttle', 'MAP', 'Intake Air Temp'], 'RPM / Throttle / MAP / Intake Air Temp over Time')
+plot_all_sensors(sensor_data, ['RPM', 'Throttle', 'MAP', 'Intake Air Temp'], 'RPM / Throttle / MAP / Intake Air Temp over Time')
 
 
 # 1) RPM / Throttle / MAP / Intake Air Temptext="Processing...", color="yellow", spinner="dots", side="right"
