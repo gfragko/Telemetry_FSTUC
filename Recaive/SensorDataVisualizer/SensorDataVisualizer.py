@@ -284,8 +284,30 @@ class SensorPlotter(QtWidgets.QMainWindow):
         self.plots.clear()
         self.plotted_sensors.clear()
 
+
+class SplashScreen(QtWidgets.QSplashScreen):
+    def __init__(self, logo_path):
+        pixmap = QtGui.QPixmap(logo_path)  # Load the logo image
+        super().__init__(pixmap)
+        self.setWindowFlag(QtCore.Qt.WindowType.FramelessWindowHint)  # Remove window borders
+
+
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
+    
+    # Load and display splash screen
+    splash = SplashScreen("Recaive/SensorDataVisualizer/icons/fstuc.png")  # Replace with your actual logo path
+    splash.show()
+    
+    QtWidgets.QApplication.processEvents()  # Allow UI updates while loading
+
+    # Simulate a loading delay (adjust as needed)
+    QtCore.QThread.sleep(2)
+
+    # Load the main application
     window = SensorPlotter()
+    splash.finish(window)  # Close splash when main window opens
     window.show()
+
     sys.exit(app.exec())
+
